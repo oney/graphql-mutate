@@ -1,0 +1,16 @@
+{
+  "name": "Example",
+  "version": "0.0.0",
+  "description": "GraphQL nested mutation example",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "express": "^4.16.2",
+    "express-graphql": "^0.6.11",
+    "graphql": "^0.12.3",
+    "graphql-mutate": "..",
+    "graphql-tools": "^2.14.1"
+  }
+}

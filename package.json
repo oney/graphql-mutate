@@ -1,0 +1,26 @@
+{
+  "name": "graphql-mutate",
+  "version": "0.1.0",
+  "description": "GraphQL nested mutation",
+  "keywords": [
+    "graphql",
+    "graphql-tools",
+    "nested",
+    "mutation"
+  ],
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "license": "MIT",
+  "repository": {
+      "type": "git",
+      "url": "https://github.com/oney/graphql-mutate.git"
+  },
+  "author": {
+      "name": "Howard Yang",
+      "email": "appdevoney@gmail.com"
+  },
+  "homepage": "https://github.com/oney/graphql-mutate",
+  "bugs": "https://github.com/oney/graphql-mutate/issues"
+}
