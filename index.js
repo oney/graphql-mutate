@@ -53,7 +53,11 @@ function mutateResolver(isMutate, resolver, options) {
           if (isMutate) {
             const {source, result} = data
             resolve(result)
-            if (ctx.__mutate[keyPath]) ctx.__mutate[keyPath].forEach(r => r(source))
+            if (ctx.__mutate[keyPath]) {
+              ctx.__mutate[keyPath].forEach(r => r(source))
+              ctx.__mutate[keyPath] = []
+              delete ctx.__mutate[keyPath]
+            }
           } else {
             resolve(data)
           }
