@@ -66,6 +66,9 @@ const schema = makeExecutableSchema({
 * `mutations` option: a array includes all mutation field names
 * `dependencies` option: a array includes all field names that may be affected by mutations
 
+## Example
+See [doc](https://github.com/oney/graphql-mutate/tree/master/example)
+
 ## TODO
 [ ] Testing
 
