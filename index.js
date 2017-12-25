@@ -14,15 +14,28 @@ function selectionName(selection) {
   return (selection.alias && selection.alias.value) || selection.name.value
 }
 
-function findSelections(keys, operation) {
+function selectionsMap(selections) {
+  const map = {}
+  selections.forEach(selection => {
+    map[selectionName(selection)] = selection
+  })
+  return map
+}
+
+function findSelections(keys, ctx, operation) {
   keys = keys.filter(i => typeof i === 'string')
-  let key = keys.shift()
-  let selections = operation.selectionSet.selections
-  while (key) {
-    selections = selections.find(selection => selectionName(selection) == key).selectionSet.selections
-    key = keys.shift()
+  const keyPath = keys.join('-')
+  if (!ctx.__mutate.prefixs[keyPath]) {
+    let key = keys.shift()
+    let selections = operation.selectionSet.selections
+    while (key) {
+      const map = selectionsMap(selections)
+      selections = map[key].selectionSet.selections
+      key = keys.shift()
+    }
+    ctx.__mutate.prefixs[keyPath] = selections
   }
-  return selections
+  return ctx.__mutate.prefixs[keyPath]
 }
 
 function depend(name, mutatesFields) {
@@ -38,28 +51,36 @@ function depend(name, mutatesFields) {
 function mutateResolver(isMutate, resolver, options) {
   const { mutations } = options
   return (source, args, ctx, info) => {
-    if (!ctx.__mutate) ctx.__mutate = {}
+    if (!ctx.__mutate) ctx.__mutate = { callbacks: {}, prefixs: {}}
     const keyPath = compositeKey(info.path)
     const keys = reverseKey(info.path)
     const name = keys.pop()
 
-    const selections = findSelections(keys.slice(), info.operation)
+    const selections = findSelections(keys.slice(), ctx, info.operation)
     const mutatesFields = selections.filter(s => mutations.indexOf(s.name.value) !== -1)
     const dependant = isMutate ? depend(name, mutatesFields) : mutatesFields[mutatesFields.length - 1]
 
     return new Promise((resolve, reject) => {
       const callback = (source) => {
+        const resolveDependencies = (source) => {
+          if (ctx.__mutate.callbacks[keyPath]) {
+            ctx.__mutate.callbacks[keyPath].forEach(r => r(source))
+            ctx.__mutate.callbacks[keyPath] = []
+            delete ctx.__mutate.callbacks[keyPath]
+          }
+        }
         Promise.resolve(resolver(source, args, ctx, info)).then(data => {
           if (isMutate) {
             const {source, result} = data
             resolve(result)
-            if (ctx.__mutate[keyPath]) {
-              ctx.__mutate[keyPath].forEach(r => r(source))
-              ctx.__mutate[keyPath] = []
-              delete ctx.__mutate[keyPath]
-            }
+            resolveDependencies(source)
           } else {
             resolve(data)
+          }
+        }).catch(e => {
+          reject(e)
+          if (isMutate) {
+            resolveDependencies(source)
           }
         })
       }
@@ -74,8 +95,8 @@ function mutateResolver(isMutate, resolver, options) {
       } else {
         keys.push(selectionName(dependant))
         const dependantPath = keys.join('-')
-        if (!ctx.__mutate[dependantPath]) ctx.__mutate[dependantPath] = []
-        ctx.__mutate[dependantPath].push(callback)
+        if (!ctx.__mutate.callbacks[dependantPath]) ctx.__mutate.callbacks[dependantPath] = []
+        ctx.__mutate.callbacks[dependantPath].push(callback)
       }
     })
   }
