@@ -69,13 +69,14 @@ function mutateResolver(isMutate, resolver, options) {
             delete ctx.__mutate.callbacks[keyPath]
           }
         }
-        Promise.resolve(resolver(source, args, ctx, info)).then(data => {
+        Promise.resolve(resolver(source, args, ctx, info)).then(result => {
           if (isMutate) {
-            const {source, result} = data
             resolve(result)
-            resolveDependencies(source)
+            const s = info.mutateSource || source
+            delete info.mutateSource
+            resolveDependencies(s)
           } else {
-            resolve(data)
+            resolve(result)
           }
         }).catch(e => {
           reject(e)

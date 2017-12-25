@@ -1,16 +1,18 @@
 const { updateUser, userAddArticle } = require('./DB')
 
 module.exports = {
-  update: (source, {input}) => {
+  update: (source, {input}, _, info) => {
     const newSource = updateUser(source, input)
     return new Promise((resolve) => {
 
       // throw Error('sss')
-      return resolve({source: newSource, result: 'Success'})
+      info.mutateSource = newSource
+      return resolve('Success')
     })
   },
-  addArticle: (source) => {
+  addArticle: (source, _, __, info) => {
     const newSource = userAddArticle(source)
-    return {source: newSource, result: 'Success'}
+    info.mutateSource = newSource
+    return 'Success'
   },
 }
