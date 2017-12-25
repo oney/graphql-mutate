@@ -1,6 +1,6 @@
 {
   "name": "graphql-mutate",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "GraphQL nested mutation",
   "keywords": [
     "graphql",
