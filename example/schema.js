@@ -4,12 +4,12 @@ const { allUsers, findUser } = require('./DB')
 const User = require('./User')
 
 const resolvers = {
-	Query: {
+  Query: {
     user: (_, {id}) => {
-			return findUser(id)
+      return findUser(id)
     },
     allUsers: () => {
-			return allUsers()
+      return allUsers()
     },
   },
   Mutation: {
@@ -51,8 +51,8 @@ schema {
 `
 
 const schema = makeExecutableSchema({
-	typeDefs,
-	resolvers,
+  typeDefs,
+  resolvers,
 })
 
 module.exports = schema
