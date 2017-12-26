@@ -48,59 +48,62 @@ function depend(name, mutatesFields) {
   return null
 }
 
-function mutateResolver(isMutate, resolver, options) {
-  const { mutations } = options
+function mutateResolver(isMutate, resolver, mutations) {
   return (source, args, ctx, info) => {
-    if (!ctx.__mutate) ctx.__mutate = { callbacks: {}, prefixs: {}}
-    const keyPath = compositeKey(info.path)
-    const keys = reverseKey(info.path)
-    const name = keys.pop()
-
-    const selections = findSelections(keys.slice(), ctx, info.operation)
-    const mutatesFields = selections.filter(s => mutations.indexOf(s.name.value) !== -1)
-    const dependant = isMutate ? depend(name, mutatesFields) : mutatesFields[mutatesFields.length - 1]
-
-    return new Promise((resolve, reject) => {
-      const callback = (source) => {
-        const resolveDependencies = (source) => {
-          if (ctx.__mutate.callbacks[keyPath]) {
-            ctx.__mutate.callbacks[keyPath].forEach(r => r(source))
-            ctx.__mutate.callbacks[keyPath] = []
-            delete ctx.__mutate.callbacks[keyPath]
-          }
-        }
-        Promise.resolve(resolver(source, args, ctx, info)).then(result => {
-          if (isMutate) {
-            resolve(result)
-            const s = info.mutateSource || source
-            delete info.mutateSource
-            resolveDependencies(s)
-          } else {
-            resolve(result)
-          }
-        }).catch(e => {
-          reject(e)
-          if (isMutate) {
-            resolveDependencies(source)
-          }
-        })
-      }
-      if (!dependant) {
-        if (isMutate) {
-          setTimeout(() => {
-            callback(source)
-          }, 0)
-        } else {
-          callback(source)
-        }
-      } else {
-        keys.push(selectionName(dependant))
-        const dependantPath = keys.join('-')
-        if (!ctx.__mutate.callbacks[dependantPath]) ctx.__mutate.callbacks[dependantPath] = []
-        ctx.__mutate.callbacks[dependantPath].push(callback)
-      }
-    })
+    return realResolver(isMutate, resolver, mutations, source, args, ctx, info)
   }
+}
+
+function realResolver(isMutate, resolver, mutations, source, args, ctx, info) {
+  if (!ctx.__mutate) ctx.__mutate = { callbacks: {}, prefixs: {}}
+  const keyPath = compositeKey(info.path)
+  const keys = reverseKey(info.path)
+  const name = keys.pop()
+
+  const selections = findSelections(keys.slice(), ctx, info.operation)
+  const mutatesFields = selections.filter(s => mutations.indexOf(s.name.value) !== -1)
+  const dependant = isMutate ? depend(name, mutatesFields) : mutatesFields[mutatesFields.length - 1]
+
+  return new Promise((resolve, reject) => {
+    const callback = (source) => {
+      const resolveDependencies = (source) => {
+        if (ctx.__mutate.callbacks[keyPath]) {
+          ctx.__mutate.callbacks[keyPath].forEach(r => r(source))
+          ctx.__mutate.callbacks[keyPath] = []
+          delete ctx.__mutate.callbacks[keyPath]
+        }
+      }
+      Promise.resolve(resolver(source, args, ctx, info)).then(result => {
+        if (isMutate) {
+          resolve(result)
+          const s = info.mutateSource || source
+          delete info.mutateSource
+          resolveDependencies(s)
+        } else {
+          resolve(result)
+        }
+      }).catch(e => {
+        reject(e)
+        if (isMutate) {
+          resolveDependencies(source)
+        }
+      })
+    }
+    if (!dependant) {
+      if (isMutate) {
+        setTimeout(() => {
+          callback(source)
+        }, 0)
+      } else {
+        callback(source)
+      }
+    } else {
+      keys.push(selectionName(dependant))
+      const dependantPath = keys.join('-')
+      if (!ctx.__mutate.callbacks[dependantPath]) ctx.__mutate.callbacks[dependantPath] = []
+      ctx.__mutate.callbacks[dependantPath].push(callback)
+    }
+  })
 }
 
 function mutate(resolvers, options) {
@@ -110,12 +113,33 @@ function mutate(resolvers, options) {
     if (!resolvers[key]) {
       throw Error('Mutate resolvers must be implemented')
     }
-    dict[key] = mutateResolver(true, resolvers[key], options)
+    dict[key] = mutateResolver(true, resolvers[key], mutations)
   })
   dependencies.forEach(key => {
-    dict[key] = mutateResolver(false, resolvers[key] || (i => i[key]), options)
+    dict[key] = mutateResolver(false, resolvers[key] || (i => i[key]), mutations)
   })
   return Object.assign({}, resolvers, dict)
 }
 
-module.exports = { mutate }
+function findMutations(info) {
+  function dependArguments(args) {
+    for (let i = 0; i < args.length; i++) {
+      if (args[i].name.value === 'depend') {
+        return args[i].value.value
+      }
+    }
+    return false
+  }
+  const type = info.parentType.name
+  const fields = info.schema._typeMap[type].astNode.fields
+  const mutations = fields.filter(f => f.directives.find(d => d.name.value === 'mutate' && !dependArguments(d.arguments)))
+  return mutations.map(m => m.name.value)
+}
+
+function mutateDirective(next, src, inputArgs, args, context, info) {
+  const isMutate = !args.depend
+  const mutations = findMutations(info)
+  return realResolver(isMutate, next, mutations, src, inputArgs, context, info)
+}
+
+module.exports = { mutate, mutateDirective }
