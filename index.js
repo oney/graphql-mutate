@@ -142,4 +142,43 @@ function mutateDirective(next, src, inputArgs, args, context, info) {
   return realResolver(isMutate, next, mutations, src, inputArgs, context, info)
 }
 
-module.exports = { mutate, mutateDirective }
+// function pickInstance(methods, properties = []) {
+//   const dict = {}
+//   methods.forEach(method => {
+//     dict[method.replace('~', '')] = function(source, args, ctx, info) {
+//       source.mutateContext = ctx
+//       return source[method.replace('~', 'Mutate')](args, info)
+//     }
+//   })
+//   properties.forEach(property => {
+//     dict[property.replace('~', '')] = function(source) {
+//       return source[property.replace('~', 'Mutate')]
+//     }
+//   })
+//   return dict
+// }
+// function pickClass(methods) {
+//   const dict = {}
+//   methods.forEach(method => {
+//     dict[method.replace('~', '')] = function(root, args, ctx, info) {
+//       root.mutateContext = ctx
+//       return root[method.replace('~', 'Mutate')](args, info)
+//     }
+//   })
+//   return dict
+// }
+
+function pick() {
+  const methods = [].slice.call(arguments)
+  const dict = {}
+  methods.forEach(method => {
+    dict[method.replace('~', '')] = function(root, args, ctx, info) {
+      root.graphqlContext = ctx
+      return root[method.replace('~', 'Mutate')](args, info)
+    }
+  })
+  return dict
+}
+
+
+module.exports = { mutate, mutateDirective, pick }

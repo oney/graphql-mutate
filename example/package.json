@@ -11,6 +11,9 @@
     "express-graphql": "^0.6.11",
     "graphql": "^0.12.3",
     "graphql-mutate": "..",
-    "graphql-tools": "^2.14.1"
+    "graphql-tools": "^2.14.1",
+    "lodash.pick": "^4.4.0",
+    "mysql2": "^1.5.1",
+    "sequelize": "^4.28.6"
   }
 }
