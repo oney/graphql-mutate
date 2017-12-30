@@ -10,12 +10,10 @@ app.use('/graphql', graphqlHTTP({
     loginUser: { id: 2 },
   },
   graphiql: true,
-  // formatError: error => {
-  //   console.log(error)
-  //   return {
-  //     message: error.message
-  //   }
-  // }
+  formatError: error => {
+    console.log(error)
+    return error
+  }
 }))
 
 app.listen(3000, function () {

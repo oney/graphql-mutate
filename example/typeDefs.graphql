@@ -1,0 +1,76 @@
+module.exports = `
+
+directive @mutate(depend: Boolean) on FIELD_DEFINITION
+directive @transformArgs(in: String) on FIELD_DEFINITION
+directive @class on OBJECT
+directive @static on FIELD_DEFINITION
+
+scalar Void
+
+enum ArticlesStatus {
+  draft
+  public
+}
+
+type User @class {
+  all: [User] @mutate(depend: true) @static
+  findById(id: Int): User @transformArgs @static
+  create(name: String, username: String): User @mutate @static
+
+  id: Int
+  name: String
+  username: String @mutate(depend: true)
+  articlesCount: Int @mutate(depend: true)
+  update(name: String, username: String): Void @mutate
+  createArticle(title: String, content: String): Article @mutate
+  getArticles(status: ArticlesStatus = public): [Article] @mutate(depend: true) @transformArgs(in: "where")
+}
+
+# type UserClass {
+#   all: [User] @mutate(depend: true)
+#   findById(id: Int): User @transformArgs
+#   create(name: String, username: String): User @mutate
+# }
+
+type Article @class {
+  featured: [Article] @static
+  find(id: Int): Article @static
+
+  title: String
+  content: String @mutate(depend: true)
+  update(content: String): Void @mutate
+  addComment(message: String): Comment @mutate
+  getComments: [Comment] @mutate(depend: true)
+}
+
+# type ArticleClass {
+#   featured: [Article]
+#   find(id: Int): Article
+# }
+
+type Comment @class {
+  find(id: Int): Comment @static
+
+  id: Int
+  message: String
+  update(content: String): Void @mutate
+  destroy: Void @mutate
+}
+
+# type CommentClass {
+#   find(id: Int): Comment
+# }
+
+type Query {
+  kk: User
+}
+
+type Mutation {
+  kk: Int
+}
+
+schema {
+  query: Query
+  mutation: Mutation
+}
+`

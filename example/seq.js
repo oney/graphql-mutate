@@ -58,12 +58,7 @@ function auth(ctx, user, roles) {
   // if (ctx.loginUser.id != this.user)
 }
 
-User.find = ({id}) => User.findById(id)
-Article.find = ({id}) => Article.findById(id)
-User.prototype.articles = function(args) {
-  auth(this.mutateContext, this, [`read:articles:${args.status}`])
-  return this.getArticles({where: args})
-}
+Article.find = function({id}){ return this.findById(id) }
 Article.prototype.addComment = function(args) {
   const { loginUser } = this.graphqlContext
   return this.createComment({...args, userId: loginUser.id})
